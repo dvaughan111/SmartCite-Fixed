@@ -1,10 +1,7 @@
 // SmartCite Content Script - Academic Citation Generator
 console.log('SmartCite content script loaded on:', window.location.href);
 
-// SmartCite Content Script - Academic Citation Generator
-console.log('SmartCite content script loaded on:', window.location.href);
-
-// ===== ADD LEGAL CITATION FUNCTIONS HERE =====
+// ===== LEGAL CITATION FUNCTIONS =====
 
 // Function to detect if page is a legal statute
 function isLegalStatutePage(url, title) {
@@ -54,34 +51,18 @@ function generateLegalCitation(format, url, title) {
   }
 }
 
-// ===== EXISTING MESSAGE LISTENER =====
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // ... existing code ...
-  
-  // Inside your generateCitation logic, add:
-  if (isLegalStatutePage(url, title)) {
-    const legalCitation = generateLegalCitation(format, url, title);
-    if (legalCitation) {
-      sendResponse({
-        citation: legalCitation,
-        success: true,
-        format: format,
-        isLegal: true
-      });
-      return true;
-    }
-  }
-  
-  // ... rest of existing citation logic ...
-});
-
-// Listen for messages from popup
+// ===== MESSAGE LISTENER =====
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('SmartCite received message:', request);
   
-  // Handle ping request (for checking if script is loaded)
+  // Handle ping request
   if (request.action === 'ping') {
-    sendResponse({ status: 'ready', timestamp: new Date().toISOString() });
+    sendResponse({ 
+      status: 'ready', 
+      timestamp: new Date().toISOString(),
+      url: window.location.href,
+      isLegal: isLegalStatutePage(window.location.href, document.title)
+    });
     return true;
   }
   
@@ -96,35 +77,61 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const domain = document.domain || 'Website';
       
       let citation;
+      let isLegal = false;
       
-      switch(format) {
-        case 'apa':
-          citation = `${title}. (${currentYear}). Retrieved from ${url}`;
-          break;
-          
-        case 'mla':
-          citation = `"${title}." ${domain}, ${currentYear}, ${url}.`;
-          break;
-          
-        case 'chicago':
-          const accessDate = new Date().toLocaleDateString('en-US', { 
-            month: 'long', 
-            day: 'numeric', 
-            year: 'numeric' 
-          });
-          citation = `"${title}." ${domain}. Accessed ${accessDate}. ${url}`;
-          break;
-          
-        default:
-          citation = `"${title}." ${url}`;
+      // Check if this is a legal statute page
+      if (isLegalStatutePage(url, title)) {
+        isLegal = true;
+        const legalCitation = generateLegalCitation(format, url, title);
+        
+        if (legalCitation) {
+          citation = legalCitation;
+        } else {
+          // Fallback for legal pages with non-legal format selected
+          citation = generateLegalCitation('bluebook', url, title);
+        }
+      } else {
+        // Regular webpage citations
+        switch(format) {
+          case 'apa':
+            citation = `${title}. (${currentYear}). Retrieved from ${url}`;
+            break;
+            
+          case 'mla':
+            citation = `"${title}." ${domain}, ${currentYear}, ${url}.`;
+            break;
+            
+          case 'chicago':
+            const accessDate = new Date().toLocaleDateString('en-US', { 
+              month: 'long', 
+              day: 'numeric', 
+              year: 'numeric' 
+            });
+            citation = `"${title}." ${domain}. Accessed ${accessDate}. ${url}`;
+            break;
+            
+          // Handle legal formats on non-legal pages
+          case 'bluebook':
+          case 'bluebook_url':
+          case 'legal_short':
+            // User selected legal format but page isn't legal, fallback to APA
+            citation = `${title}. (${currentYear}). Retrieved from ${url}`;
+            break;
+            
+          default:
+            citation = `"${title}." ${url}`;
+        }
       }
       
       console.log('Generated citation:', citation);
+      console.log('Is legal page:', isLegal);
       
       sendResponse({
         citation: citation,
         success: true,
-        format: format
+        format: format,
+        isLegal: isLegal,
+        url: url
       });
       
     } catch (error) {
@@ -141,10 +148,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Test function for debugging
 window.smartCiteTest = function() {
+  const url = window.location.href;
+  const title = document.title;
   return {
-    title: document.title,
-    url: window.location.href,
+    title: title,
+    url: url,
     domain: document.domain,
+    isLegalStatute: isLegalStatutePage(url, title),
+    legalCitation: generateLegalCitation('bluebook', url, title),
     ready: true,
     timestamp: new Date().toISOString()
   };
