@@ -1,6 +1,80 @@
 // SmartCite Content Script - Academic Citation Generator
 console.log('SmartCite content script loaded on:', window.location.href);
 
+// SmartCite Content Script - Academic Citation Generator
+console.log('SmartCite content script loaded on:', window.location.href);
+
+// ===== ADD LEGAL CITATION FUNCTIONS HERE =====
+
+// Function to detect if page is a legal statute
+function isLegalStatutePage(url, title) {
+  const legalPatterns = [
+    /RCW/i,
+    /revised.*code.*washington/i,
+    /app\.leg\.wa\.gov\/RCW/i,
+    /cite=\d+\.\d+\.\d+/i,
+    /title \d+/i,
+    /chapter \d+/i,
+    /section \d+/i
+  ];
+  
+  return legalPatterns.some(pattern => 
+    pattern.test(url) || pattern.test(title)
+  );
+}
+
+// Specialized legal citation generator
+function generateLegalCitation(format, url, title) {
+  // Extract statute information
+  const statuteMatch = url.match(/cite=(\d+\.\d+\.\d+)/);
+  if (!statuteMatch) return null;
+  
+  const statute = statuteMatch[1]; // e.g., "59.18.030"
+  
+  switch(format) {
+    case 'bluebook':
+      // Bluebook format for legal filings (NO URL)
+      return `WASH. REV. CODE § ${statute} (2024).`;
+      
+    case 'bluebook_url':
+      // Bluebook with URL (for research only)
+      const visitedDate = new Date().toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+      return `WASH. REV. CODE § ${statute} (2024), ${url} (last visited ${visitedDate}).`;
+      
+    case 'legal_short':
+      // Short form for legal documents
+      return `RCW ${statute}`;
+      
+    default:
+      return null;
+  }
+}
+
+// ===== EXISTING MESSAGE LISTENER =====
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // ... existing code ...
+  
+  // Inside your generateCitation logic, add:
+  if (isLegalStatutePage(url, title)) {
+    const legalCitation = generateLegalCitation(format, url, title);
+    if (legalCitation) {
+      sendResponse({
+        citation: legalCitation,
+        success: true,
+        format: format,
+        isLegal: true
+      });
+      return true;
+    }
+  }
+  
+  // ... rest of existing citation logic ...
+});
+
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('SmartCite received message:', request);
