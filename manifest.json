@@ -34,6 +34,4 @@
   "host_permissions": [
     "https://doi.org/*"
   ]
-  
-  // NO content_scripts in manifest - we'll inject dynamically
 }
