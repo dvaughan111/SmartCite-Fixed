@@ -19,7 +19,7 @@
       background: #ffffff;
     }
     
-    /* ===== ADD THESE TRANSITION CLASSES ===== */
+    /* ===== SCREEN TRANSITIONS ===== */
     #welcomeScreen, #mainScreen {
       transition: opacity 0.3s ease;
     }
@@ -32,7 +32,7 @@
     .fade-in {
       opacity: 1;
     }
-    /* ===== END TRANSITION CLASSES ===== */
+    /* ===== END TRANSITIONS ===== */
     
     .header {
       margin-bottom: 15px;
@@ -148,6 +148,43 @@
     .upgrade-link:hover {
       text-decoration: underline;
     }
+    
+    /* Welcome screen specific styles */
+    .permission-box {
+      padding: 15px;
+      background: #EFF6FF;
+      border-radius: 8px;
+      margin: 15px 0;
+      border-left: 4px solid #2563EB;
+    }
+    
+    .permission-box h3 {
+      color: #2563EB;
+      margin-bottom: 10px;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .permission-box ul {
+      font-size: 13px;
+      margin-left: 20px;
+      color: #4B5563;
+      line-height: 1.6;
+    }
+    
+    .permission-box li {
+      margin-bottom: 5px;
+    }
+    
+    .privacy-note {
+      margin-top: 15px;
+      font-size: 12px;
+      color: #6B7280;
+      text-align: center;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -155,25 +192,32 @@
   <div id="welcomeScreen">
     <div class="header">
       <h1>Welcome to SmartCite! ✨</h1>
-      <p>Generate citations from any webpage</p>
+      <p>Generate accurate citations from any webpage</p>
     </div>
     
-    <div style="padding: 15px; background: #EFF6FF; border-radius: 8px; margin: 15px 0;">
-      <h3 style="color: #2563EB; margin-bottom: 10px;">🔒 Permission Required</h3>
+    <div class="permission-box">
+      <h3>🔒 Permission Required</h3>
       <p style="font-size: 13px; line-height: 1.5; margin-bottom: 10px;">
-        SmartCite needs permission to <strong>read webpage content</strong> to generate accurate citations.
+        To generate citations, SmartCite needs permission to <strong>read webpage content</strong>.
+        This allows the extension to:
       </p>
-      <ul style="font-size: 13px; margin-left: 20px; color: #4B5563;">
-        <li>Only accesses pages when you click "Generate"</li>
-        <li>Never collects personal data</li>
-        <li>Works entirely in your browser</li>
+      <ul>
+        <li>Extract titles, authors, and publication dates</li>
+        <li>Generate accurate citations in multiple formats</li>
+        <li>Detect legal statutes for proper legal citations</li>
+        <li>Work on academic, legal, and general websites</li>
       </ul>
+    </div>
+    
+    <div style="font-size: 13px; color: #059669; padding: 10px; background: #D1FAE5; border-radius: 6px; margin-bottom: 15px;">
+      <strong>🔐 Privacy First:</strong> All processing happens locally in your browser. No data is sent to external servers.
     </div>
     
     <button id="grantPermissionBtn">✅ Grant Permission & Continue</button>
     
-    <div style="margin-top: 15px; font-size: 12px; color: #6B7280; text-align: center;">
-      <small>You can change permissions anytime in Chrome settings</small>
+    <div class="privacy-note">
+      <small>You can change or revoke permissions anytime in Chrome settings<br>
+      (chrome://extensions → SmartCite → Details → Site access)</small>
     </div>
   </div>
   
@@ -191,7 +235,7 @@
         <option value="chicago">Chicago Style</option>
       </optgroup>
       <optgroup label="Legal Styles">
-        <option value="bluebook">Bluebook (Legal Filing)</option>
+        <option value="bluebook">Bluebook (Legal Filing - No URL)</option>
         <option value="bluebook_url">Bluebook with URL (Research)</option>
         <option value="legal_short">Legal Short Form (RCW XX.XX.XXX)</option>
       </optgroup>
