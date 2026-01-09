@@ -1,67 +1,91 @@
-// SmartCite Content Script - Academic Citation Generator
+// SmartCite Content Script - Enhanced Academic Citation Generator
 console.log('SmartCite content script loaded on:', window.location.href);
 
-// ===== LEGAL CITATION FUNCTIONS =====
+// Academic database selectors
+const ACADEMIC_SELECTORS = {
+  // Common academic metadata selectors
+  title: [
+    'meta[name="citation_title"]',
+    'meta[property="og:title"]',
+    'meta[name="DC.Title"]',
+    'h1.article-title',
+    '.title',
+    'h1'
+  ],
+  authors: [
+    'meta[name="citation_author"]',
+    'meta[name="DC.Creator"]',
+    'meta[property="article:author"]',
+    '.author-list',
+    '[class*="author"]'
+  ],
+  date: [
+    'meta[name="citation_publication_date"]',
+    'meta[name="DC.Date"]',
+    'meta[property="article:published_time"]',
+    '.publication-date',
+    '.date'
+  ],
+  journal: [
+    'meta[name="citation_journal_title"]',
+    'meta[name="DC.Source"]',
+    '.journal-title'
+  ],
+  doi: [
+    'meta[name="citation_doi"]',
+    'meta[name="DC.Identifier"]',
+    '[data-doi]',
+    'a[href*="doi.org"]'
+  ]
+};
 
-// Function to detect if page is a legal statute
-function isLegalStatutePage(url, title) {
-  const legalPatterns = [
-    /RCW/i,
-    /revised.*code.*washington/i,
-    /app\.leg\.wa\.gov\/RCW/i,
-    /cite=\d+\.\d+\.\d+/i,
-    /title \d+/i,
-    /chapter \d+/i,
-    /section \d+/i
-  ];
+function extractAcademicMetadata() {
+  const metadata = {};
   
-  return legalPatterns.some(pattern => 
-    pattern.test(url) || pattern.test(title)
-  );
-}
-
-// Specialized legal citation generator
-function generateLegalCitation(format, url, title) {
-  // Extract statute information
-  const statuteMatch = url.match(/cite=(\d+\.\d+\.\d+)/);
-  if (!statuteMatch) return null;
+  // Extract using academic selectors
+  Object.keys(ACADEMIC_SELECTORS).forEach(key => {
+    for (const selector of ACADEMIC_SELECTORS[key]) {
+      const elements = document.querySelectorAll(selector);
+      if (elements.length > 0) {
+        if (elements[0].getAttribute('content')) {
+          metadata[key] = elements[0].getAttribute('content');
+          break;
+        } else if (elements[0].textContent) {
+          metadata[key] = elements[0].textContent.trim();
+          break;
+        }
+      }
+    }
+  });
   
-  const statute = statuteMatch[1]; // e.g., "59.18.030"
-  
-  switch(format) {
-    case 'bluebook':
-      // Bluebook format for legal filings (NO URL)
-      return `WASH. REV. CODE § ${statute} (2024).`;
-      
-    case 'bluebook_url':
-      // Bluebook with URL (for research only)
-      const visitedDate = new Date().toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-      });
-      return `WASH. REV. CODE § ${statute} (2024), ${url} (last visited ${visitedDate}).`;
-      
-    case 'legal_short':
-      // Short form for legal documents
-      return `RCW ${statute}`;
-      
-    default:
-      return null;
+  // Fallback to general metadata
+  if (!metadata.title) metadata.title = document.title;
+  if (!metadata.authors) metadata.authors = 'Unknown Author';
+  if (!metadata.date) {
+    const yearMatch = document.body.innerText.match(/\b(19|20)\d{2}\b/);
+    metadata.date = yearMatch ? yearMatch[0] : new Date().getFullYear().toString();
   }
+  
+  // Try to extract DOI from URL or page content
+  if (!metadata.doi) {
+    const doiRegex = /10\.\d{4,9}\/[-._;()/:A-Z0-9]+/gi;
+    const urlMatch = window.location.href.match(doiRegex);
+    const pageMatch = document.body.innerText.match(doiRegex);
+    metadata.doi = (urlMatch || pageMatch || [null])[0];
+  }
+  
+  return metadata;
 }
 
-// ===== MESSAGE LISTENER =====
+// Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('SmartCite received message:', request);
   
-  // Handle ping request
   if (request.action === 'ping') {
     sendResponse({ 
       status: 'ready', 
       timestamp: new Date().toISOString(),
-      url: window.location.href,
-      isLegal: isLegalStatutePage(window.location.href, document.title)
+      academicMetadata: extractAcademicMetadata() 
     });
     return true;
   }
@@ -71,67 +95,38 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     
     try {
       const format = request.format || 'mla';
-      const title = document.title || 'Unknown Title';
-      const url = window.location.href;
-      const currentYear = new Date().getFullYear();
-      const domain = document.domain || 'Website';
+      const metadata = extractAcademicMetadata();
       
       let citation;
-      let isLegal = false;
       
-      // Check if this is a legal statute page
-      if (isLegalStatutePage(url, title)) {
-        isLegal = true;
-        const legalCitation = generateLegalCitation(format, url, title);
-        
-        if (legalCitation) {
-          citation = legalCitation;
-        } else {
-          // Fallback for legal pages with non-legal format selected
-          citation = generateLegalCitation('bluebook', url, title);
-        }
-      } else {
-        // Regular webpage citations
-        switch(format) {
-          case 'apa':
-            citation = `${title}. (${currentYear}). Retrieved from ${url}`;
-            break;
-            
-          case 'mla':
-            citation = `"${title}." ${domain}, ${currentYear}, ${url}.`;
-            break;
-            
-          case 'chicago':
-            const accessDate = new Date().toLocaleDateString('en-US', { 
-              month: 'long', 
-              day: 'numeric', 
-              year: 'numeric' 
-            });
-            citation = `"${title}." ${domain}. Accessed ${accessDate}. ${url}`;
-            break;
-            
-          // Handle legal formats on non-legal pages
-          case 'bluebook':
-          case 'bluebook_url':
-          case 'legal_short':
-            // User selected legal format but page isn't legal, fallback to APA
-            citation = `${title}. (${currentYear}). Retrieved from ${url}`;
-            break;
-            
-          default:
-            citation = `"${title}." ${url}`;
-        }
+      switch(format) {
+        case 'apa':
+          citation = generateAPACitation(metadata);
+          break;
+          
+        case 'mla':
+          citation = generateMLACitation(metadata);
+          break;
+          
+        case 'chicago':
+          citation = generateChicagoCitation(metadata);
+          break;
+          
+        case 'ieee':
+          citation = generateIEEECitation(metadata);
+          break;
+          
+        default:
+          citation = generateDefaultCitation(metadata);
       }
       
       console.log('Generated citation:', citation);
-      console.log('Is legal page:', isLegal);
       
       sendResponse({
         citation: citation,
         success: true,
         format: format,
-        isLegal: isLegal,
-        url: url
+        metadata: metadata
       });
       
     } catch (error) {
@@ -142,23 +137,76 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     }
     
-    return true; // Keep message channel open for async response
+    return true;
   }
 });
 
+// Citation generators
+function generateAPACitation(meta) {
+  const authors = meta.authors || 'Unknown Author';
+  const year = meta.date ? meta.date.substring(0, 4) : new Date().getFullYear();
+  const title = meta.title || document.title;
+  const journal = meta.journal || document.domain;
+  const doi = meta.doi ? ` https://doi.org/${meta.doi}` : '';
+  
+  if (journal.includes('.')) {
+    // Journal article format
+    return `${authors}. (${year}). ${title}. ${journal}.${doi}`;
+  } else {
+    // Website format
+    return `${title}. (${year}, ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}). Retrieved from ${window.location.href}`;
+  }
+}
+
+function generateMLACitation(meta) {
+  const authors = meta.authors || 'Unknown Author';
+  const title = meta.title || document.title;
+  const journal = meta.journal || document.domain;
+  const year = meta.date ? meta.date.substring(0, 4) : new Date().getFullYear();
+  const url = window.location.href;
+  
+  if (journal.includes('.')) {
+    return `"${title}." ${journal}, ${year}.`;
+  } else {
+    return `"${title}." ${journal}, ${year}, ${url}.`;
+  }
+}
+
+function generateChicagoCitation(meta) {
+  const authors = meta.authors || 'Unknown Author';
+  const title = meta.title || document.title;
+  const journal = meta.journal || document.domain;
+  const year = meta.date ? meta.date.substring(0, 4) : new Date().getFullYear();
+  const accessDate = new Date().toLocaleDateString('en-US', { 
+    month: 'long', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+  
+  if (journal.includes('.')) {
+    return `${authors}. "${title}." ${journal} (${year}).`;
+  } else {
+    return `${authors}. "${title}." ${journal}. Last modified ${year}. Accessed ${accessDate}. ${window.location.href}`;
+  }
+}
+
+function generateIEEECitation(meta) {
+  const authors = meta.authors || 'A. Author';
+  const title = meta.title || document.title;
+  const journal = meta.journal || 'Website';
+  const year = meta.date ? meta.date.substring(0, 4) : new Date().getFullYear();
+  const doi = meta.doi || '';
+  
+  return `[1] ${authors}, "${title}," ${journal}, ${year}.${doi ? ' doi: ' + doi : ''}`;
+}
+
+function generateDefaultCitation(meta) {
+  return `"${meta.title || document.title}." ${window.location.href}`;
+}
+
 // Test function for debugging
 window.smartCiteTest = function() {
-  const url = window.location.href;
-  const title = document.title;
-  return {
-    title: title,
-    url: url,
-    domain: document.domain,
-    isLegalStatute: isLegalStatutePage(url, title),
-    legalCitation: generateLegalCitation('bluebook', url, title),
-    ready: true,
-    timestamp: new Date().toISOString()
-  };
+  return extractAcademicMetadata();
 };
 
-console.log('SmartCite content script ready');
+console.log('SmartCite enhanced content script ready');
