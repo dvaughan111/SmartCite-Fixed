@@ -1,35 +1,26 @@
 {
   "manifest_version": 3,
   "name": "SmartCite - Academic Citation Generator",
-  "version": "1.0.1",
-  "description": "One-click citations from any webpage.",
-  
+  "version": "1.1.0",
+  "description": "Generate citations from any webpage or video",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  
   "action": {
     "default_popup": "popup.html",
     "default_title": "Generate Citation"
   },
-  
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "scripting"
   ],
-  
+  "optional_host_permissions": [
+    "*://*/*"
+  ],
   "host_permissions": [
-    "*://*/*",
     "https://doi.org/*"
-  ],
-  
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_end"
-    }
   ]
 }
