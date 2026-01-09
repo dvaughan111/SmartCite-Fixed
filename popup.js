@@ -1,266 +1,40 @@
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', function() {
   console.log('SmartCite popup loaded');
   
-  // Get UI elements
-  const welcomeScreen = document.getElementById('welcomeScreen');
-  const mainScreen = document.getElementById('mainScreen');
-  const grantPermissionBtn = document.getElementById('grantPermissionBtn');
+  // DOM Elements
+  const citeButton = document.getElementById('citeButton');
+  const formatSelect = document.getElementById('formatSelect');
+  const resultDiv = document.getElementById('result');
+  const usageCount = document.getElementById('count');
+  const toggleManualEdit = document.getElementById('toggleManualEdit');
+  const manualEditPanel = document.getElementById('manualEditPanel');
+  const saveManualBtn = document.getElementById('saveManual');
+  const cancelManualBtn = document.getElementById('cancelManual');
   
-  // Check if we already have permissions
-  async function checkPermissions() {
-    try {
-      const hasPermission = await chrome.permissions.contains({
-        origins: ['*://*/*']
-      });
-      
-      if (hasPermission) {
-        // Already have permission, fade in main screen directly
-        welcomeScreen.style.display = 'none';
-        mainScreen.style.display = 'block';
-        mainScreen.classList.add('fade-in');
-        initializeMainApp();
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Permission check error:', error);
-      return false;
-    }
-  }
-  
-  // Initialize main app (your existing code)
-  function initializeMainApp() {
-    console.log('Initializing main app...');
+  // Load usage count
+  chrome.storage.local.get(['citationCount'], function(result) {
+    const count = result.citationCount || 0;
+    usageCount.textContent = count;
     
-    const citeButton = document.getElementById('citeButton');
-    const formatSelect = document.getElementById('formatSelect');
-    const resultDiv = document.getElementById('result');
-    const usageCount = document.getElementById('count');
-    const upgradeLink = document.getElementById('upgradeLink');
-    
-    // Load usage count
-    chrome.storage.local.get(['citationCount'], function(result) {
-      const count = result.citationCount || 0;
-      usageCount.textContent = count;
-      
-      if (count >= 5) {
-        citeButton.disabled = true;
-        citeButton.textContent = 'Free Limit Reached';
-        citeButton.style.background = '#9CA3AF';
-      }
-    });
-    
-    // Function to request permissions and inject content script
-    async function requestPageAccessAndInject(tabId) {
-      try {
-        // Request optional permissions for all URLs
-        console.log('Requesting optional permissions...');
-        const granted = await chrome.permissions.request({
-          origins: ['*://*/*']
-        });
-        
-        if (!granted) {
-          throw new Error('Permission denied. SmartCite needs access to page content to generate citations.');
-        }
-        
-        console.log('Permissions granted, injecting content script...');
-        
-        // Inject content script
-        await chrome.scripting.executeScript({
-          target: { tabId: tabId },
-          files: ['content.js']
-        });
-        
-        // Give it a moment to load
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        return true;
-      } catch (error) {
-        console.error('Permission/injection error:', error);
-        throw error;
-      }
-    }
-    
-    // Citation button click
-    citeButton.addEventListener('click', async function() {
-      console.log('Generate citation clicked');
-      
-      const format = formatSelect.value;
-      
-      // Show loading state
-      resultDiv.innerHTML = '<div class="loading">Generating citation...</div>';
+    if (count >= 5) {
       citeButton.disabled = true;
-      citeButton.textContent = 'Processing...';
-      
-      try {
-        // Get current tab
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        console.log('Current tab:', tab.url);
-        
-        // Check if we're on a valid page
-        if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('edge://')) {
-          throw new Error('Cannot generate citations for browser pages');
-        }
-        
-        let contentScriptReady = false;
-        
-        // Try to ping existing content script first
-        try {
-          await chrome.tabs.sendMessage(tab.id, { action: 'ping' });
-          contentScriptReady = true;
-          console.log('Content script already loaded');
-        } catch (error) {
-          console.log('Content script not found, will inject...');
-        }
-        
-        // If no content script, request permission and inject
-        if (!contentScriptReady) {
-          await requestPageAccessAndInject(tab.id);
-        }
-        
-        // Now send the citation request
-        console.log('Sending citation request...');
-        const response = await chrome.tabs.sendMessage(tab.id, { 
-          action: 'generateCitation', 
-          format: format 
-        });
-        console.log('Response:', response);
-        
-        if (response && response.error) {
-          resultDiv.innerHTML = `<div class="error">${response.error}</div>`;
-        } else if (response && response.citation) {
-          // Increment usage count
-          const currentCount = (await chrome.storage.local.get(['citationCount'])).citationCount || 0;
-          const newCount = currentCount + 1;
-          await chrome.storage.local.set({ citationCount: newCount });
-          usageCount.textContent = newCount;
-          
-          // Show citation
-          resultDiv.innerHTML = `
-            <div class="success">✓ Citation generated</div>
-            <textarea id="citationText" readonly>${response.citation}</textarea>
-            <button class="copy-btn" id="copyButton">📋 Copy to Clipboard</button>
-          `;
-          
-          // Add copy functionality
-          document.getElementById('copyButton').addEventListener('click', function() {
-            const textarea = document.getElementById('citationText');
-            textarea.select();
-            document.execCommand('copy');
-            this.textContent = '✓ Copied!';
-            this.style.background = '#10B981';
-            setTimeout(() => {
-              this.textContent = '📋 Copy to Clipboard';
-              this.style.background = '#3B82F6';
-            }, 2000);
-          });
-          
-          // Check if reached limit
-          if (newCount >= 5) {
-            citeButton.disabled = true;
-            citeButton.textContent = 'Free Limit Reached';
-            citeButton.style.background = '#9CA3AF';
-          }
-        } else {
-          resultDiv.innerHTML = '<div class="error">No response from page. Try refreshing.</div>';
-        }
-      } catch (error) {
-        console.error('Popup error:', error);
-        
-        // User-friendly error messages
-        let errorMessage = error.message;
-        if (error.message.includes('Permission denied')) {
-          errorMessage = 'Permission required to read page content. Please allow access when prompted.';
-        } else if (error.message.includes('Cannot establish connection')) {
-          errorMessage = 'Could not connect to page. Try refreshing and clicking again.';
-        }
-        
-        resultDiv.innerHTML = `
-          <div class="error">
-            ${errorMessage}<br>
-            <small>Make sure you're on a regular webpage.</small>
-          </div>
-        `;
-      } finally {
-        // Reset button state
-        const currentCount = (await chrome.storage.local.get(['citationCount'])).citationCount || 0;
-        if (currentCount < 5) {
-          citeButton.disabled = false;
-          citeButton.textContent = '📚 Generate Citation';
-        }
-      }
-    });
-    
-    // Upgrade link handler
-    if (upgradeLink) {
-      upgradeLink.addEventListener('click', function(e) {
-        e.preventDefault();
-        resultDiv.innerHTML = `
-          <div style="text-align: center;">
-            <div style="font-weight: bold; color: #2563EB; margin-bottom: 10px;">✨ Premium Features</div>
-            <div style="text-align: left; font-size: 13px;">
-              <div>• Unlimited citations</div>
-              <div>• 9,000+ citation styles</div>
-              <div>• Team collaboration</div>
-              <div>• AI-powered suggestions</div>
-            </div>
-            <div style="margin-top: 15px; font-size: 12px;">
-              Coming soon!<br>
-              <small>Join waitlist for early access</small>
-            </div>
-          </div>
-        `;
-      });
-    }
-    
-    console.log('Main app initialized');
-  }
-  
-  // Grant permission button click
-  grantPermissionBtn.addEventListener('click', async function() {
-    grantPermissionBtn.disabled = true;
-    grantPermissionBtn.textContent = 'Requesting permission...';
-    
-    try {
-      // Request optional permissions
-      const granted = await chrome.permissions.request({
-        origins: ['*://*/*']
-      });
-      
-      if (granted) {
-        // Fade out welcome screen
-        welcomeScreen.classList.add('fade-out');
-        
-        // Wait for fade out, then switch screens
-        setTimeout(() => {
-          welcomeScreen.style.display = 'none';
-          mainScreen.style.display = 'block';
-          
-          // Fade in main screen
-          setTimeout(() => {
-            mainScreen.classList.add('fade-in');
-          }, 10);
-          
-          initializeMainApp();
-        }, 300); // Match the CSS transition time (0.3s)
-        
-      } else {
-        // User denied
-        grantPermissionBtn.textContent = 'Permission Required';
-        grantPermissionBtn.style.background = '#DC2626';
-        setTimeout(() => {
-          grantPermissionBtn.disabled = false;
-          grantPermissionBtn.textContent = '✅ Grant Permission & Continue';
-          grantPermissionBtn.style.background = '#10B981';
-        }, 2000);
-      }
-    } catch (error) {
-      console.error('Permission request error:', error);
-      grantPermissionBtn.disabled = false;
-      grantPermissionBtn.textContent = '✅ Grant Permission & Continue';
+      citeButton.textContent = 'Free Limit Reached';
+      citeButton.style.background = '#9CA3AF';
     }
   });
   
-  // Check permissions on load
-  await checkPermissions();
-});
+  // Generate Citation Button
+  citeButton.addEventListener('click', async function() {
+    const format = formatSelect.value;
+    
+    // Show loading
+    resultDiv.innerHTML = '<div class="loading">Generating citation...</div>';
+    citeButton.disabled = true;
+    citeButton.textContent = 'Processing...';
+    
+    try {
+      // Get current tab
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      // Check if valid page
+      if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('edge://')) {
