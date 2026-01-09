@@ -9,22 +9,23 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
     
     body {
-      width: 380px;
-      min-height: 200px;
+      width: 400px;
       padding: 20px;
       background: #ffffff;
     }
     
     .header {
       margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eaeaea;
     }
     
     .header h1 {
-      font-size: 18px;
+      font-size: 20px;
       color: #2563EB;
       margin-bottom: 5px;
     }
@@ -36,79 +37,103 @@
     
     select {
       width: 100%;
-      padding: 10px;
-      margin-bottom: 12px;
+      padding: 12px;
+      margin-bottom: 15px;
       border: 1px solid #D1D5DB;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 14px;
       background: white;
+      cursor: pointer;
     }
     
     button {
       width: 100%;
-      padding: 12px;
+      padding: 14px;
       background: #10B981;
       color: white;
       border: none;
-      border-radius: 6px;
-      font-size: 15px;
+      border-radius: 8px;
+      font-size: 16px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
       margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
     
     button:hover {
       background: #059669;
+      transform: translateY(-1px);
     }
     
     button:disabled {
       background: #9CA3AF;
       cursor: not-allowed;
+      transform: none;
     }
     
     #result {
-      padding: 15px;
+      padding: 20px;
       background: #F9FAFB;
-      border-radius: 8px;
+      border-radius: 10px;
       border: 1px solid #E5E7EB;
-      min-height: 60px;
-      font-size: 13px;
+      min-height: 80px;
+      font-size: 14px;
       line-height: 1.5;
+      margin-top: 15px;
     }
     
     .loading {
       color: #6B7280;
       font-style: italic;
+      text-align: center;
+      padding: 20px;
     }
     
     .error {
       color: #DC2626;
+      background: #FEF2F2;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #DC2626;
     }
     
     .success {
       color: #059669;
       font-weight: 600;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     
     textarea {
       width: 100%;
-      height: 80px;
-      padding: 10px;
-      border: 1px solid #D1D5DB;
-      border-radius: 6px;
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
-      margin: 10px 0;
+      min-height: 120px;
+      padding: 15px;
+      border: 2px solid #E5E7EB;
+      border-radius: 8px;
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 15px 0;
       resize: vertical;
+      background: white;
+    }
+    
+    textarea:focus {
+      outline: none;
+      border-color: #10B981;
     }
     
     .copy-btn {
       background: #3B82F6;
-      font-size: 14px;
-      padding: 8px;
-      margin-top: 5px;
+      padding: 12px;
+      font-size: 15px;
+      margin-top: 10px;
     }
     
     .copy-btn:hover {
@@ -117,14 +142,14 @@
     
     .export-buttons {
       display: flex;
-      gap: 8px;
-      margin-top: 10px;
+      gap: 10px;
+      margin-top: 15px;
     }
     
     .export-buttons button {
       flex: 1;
-      padding: 8px;
-      font-size: 12px;
+      padding: 10px;
+      font-size: 13px;
       margin: 0;
       background: #6B7280;
     }
@@ -134,8 +159,8 @@
     }
     
     .footer {
-      margin-top: 15px;
-      padding-top: 10px;
+      margin-top: 20px;
+      padding-top: 15px;
       border-top: 1px solid #E5E7EB;
       font-size: 12px;
       color: #6B7280;
@@ -146,97 +171,148 @@
       color: #10B981;
       text-decoration: none;
       font-weight: 600;
+      margin-top: 5px;
+      display: inline-block;
     }
     
     .upgrade-link:hover {
       text-decoration: underline;
     }
     
-    /* Manual Edit Panel */
-    #manualEditPanel {
-      background: #F3F4F6;
-      border-radius: 6px;
-      padding: 15px;
+    .manual-edit-panel {
+      background: #F0F9FF;
+      border-radius: 8px;
+      padding: 20px;
       margin-top: 15px;
-      border: 1px dashed #D1D5DB;
+      border: 2px dashed #93C5FD;
       display: none;
     }
     
-    #manualEditPanel h4 {
-      font-size: 14px;
-      margin-bottom: 10px;
-      color: #4B5563;
+    .manual-edit-panel h4 {
+      font-size: 15px;
+      margin-bottom: 15px;
+      color: #1E40AF;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     
-    #manualEditPanel input {
+    .manual-edit-panel input {
       width: 100%;
-      padding: 8px;
-      margin-bottom: 8px;
-      border: 1px solid #D1D5DB;
-      border-radius: 4px;
-      font-size: 13px;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #93C5FD;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
     }
     
-    #manualEditPanel button {
-      background: #8B5CF6;
-      font-size: 13px;
-      padding: 8px;
-      margin: 5px 0 0 0;
-    }
-    
-    #manualEditPanel button:hover {
-      background: #7C3AED;
-    }
-    
-    #manualEditPanel #cancelManual {
-      background: #6B7280;
-      margin-left: 5px;
-    }
-    
-    #manualEditPanel #cancelManual:hover {
-      background: #4B5563;
+    .manual-edit-panel input:focus {
+      outline: none;
+      border-color: #3B82F6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
     
     .edit-buttons {
       display: flex;
-      gap: 8px;
+      gap: 10px;
+      margin-top: 10px;
     }
     
     .edit-buttons button {
-      flex: 1;
       margin: 0;
+    }
+    
+    #saveManual {
+      background: #8B5CF6;
+    }
+    
+    #saveManual:hover {
+      background: #7C3AED;
+    }
+    
+    #cancelManual {
+      background: #6B7280;
+    }
+    
+    #cancelManual:hover {
+      background: #4B5563;
     }
     
     #toggleManualEdit {
       background: transparent;
       color: #6B7280;
-      border: 1px solid #D1D5DB;
-      font-size: 12px;
-      padding: 6px 12px;
-      margin: 10px 0;
-      width: auto;
-      display: block;
+      border: 2px solid #D1D5DB;
+      font-size: 14px;
+      padding: 10px;
+      margin: 15px 0;
+      background: white;
     }
     
     #toggleManualEdit:hover {
-      background: #F3F4F6;
+      background: #F9FAFB;
+      border-color: #9CA3AF;
     }
     
     .metadata-info {
-      font-size: 11px;
-      color: #6B7280;
+      font-size: 12px;
+      color: #4B5563;
       margin-top: 10px;
-      padding: 8px;
-      background: #F9FAFB;
+      padding: 12px;
+      background: #F3F4F6;
+      border-radius: 6px;
+      border-left: 4px solid #10B981;
+      line-height: 1.5;
+    }
+    
+    .metadata-info strong {
+      color: #1F2937;
+    }
+    
+    .video-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #DBEAFE;
+      color: #1E40AF;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    
+    .source-type {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #E5E7EB;
       border-radius: 4px;
-      border-left: 3px solid #3B82F6;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+      color: #374151;
+    }
+    
+    .tips {
+      background: #FFFBEB;
+      border: 1px solid #FBBF24;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 12px;
+      color: #92400E;
+    }
+    
+    .tips h5 {
+      margin-bottom: 5px;
+      color: #D97706;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>SmartCite</h1>
-    <p>Generate academic citations from any webpage</p>
+    <h1>SmartCite 📚</h1>
+    <p>Generate citations from webpages, videos, and articles</p>
   </div>
   
   <select id="formatSelect">
@@ -245,34 +321,50 @@
     <option value="chicago">Chicago Style</option>
     <option value="ieee">IEEE Style</option>
     <option value="harvard">Harvard Style</option>
-    <option value="vancouver">Vancouver Style</option>
     <option value="ama">AMA Style</option>
   </select>
   
-  <button id="citeButton">📚 Generate Citation</button>
+  <button id="citeButton">
+    <span>📚</span>
+    <span>Generate Citation</span>
+  </button>
   
   <div id="result">
-    <!-- Results will appear here -->
+    <div class="tips">
+      <h5>💡 Tips for best results:</h5>
+      • Refresh page if citation fails<br>
+      • Use manual edit for corrections<br>
+      • Works on articles & videos
+    </div>
   </div>
   
-  <button id="toggleManualEdit">✏️ Edit Details Manually</button>
+  <button id="toggleManualEdit">
+    <span>✏️</span>
+    <span>Edit Details Manually</span>
+  </button>
   
-  <div id="manualEditPanel">
-    <h4>Manual Citation Details</h4>
-    <input type="text" id="editTitle" placeholder="Title">
-    <input type="text" id="editAuthors" placeholder="Authors (comma separated)">
-    <input type="text" id="editYear" placeholder="Year">
-    <input type="text" id="editJournal" placeholder="Journal/Website">
+  <div id="manualEditPanel" class="manual-edit-panel">
+    <h4>
+      <span>📝</span>
+      Manual Citation Details
+    </h4>
+    <input type="text" id="editTitle" placeholder="Title (required)">
+    <input type="text" id="editAuthors" placeholder="Authors (separate with commas)">
+    <input type="text" id="editYear" placeholder="Publication Year">
+    <input type="text" id="editJournal" placeholder="Journal/Website/Channel">
     <div class="edit-buttons">
-      <button id="saveManual">Use Manual Details</button>
+      <button id="saveManual">Use These Details</button>
       <button id="cancelManual">Cancel</button>
     </div>
   </div>
   
   <div class="footer">
-    <div>Free uses today: <span id="count">0</span>/5</div>
-    <div style="margin-top: 5px;">
-      <a href="#" id="upgradeLink" class="upgrade-link">✨ Upgrade to Premium</a>
+    <div>Citations today: <strong id="count">0</strong>/10</div>
+    <div style="margin-top: 8px;">
+      <a href="#" id="upgradeLink" class="upgrade-link">
+        <span>✨</span>
+        <span>Upgrade to Premium</span>
+      </a>
     </div>
   </div>
 
